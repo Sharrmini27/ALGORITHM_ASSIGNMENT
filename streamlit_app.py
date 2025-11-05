@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import random
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # Make sure matplotlib is installed
 
 # ==========================================
 # STREAMLIT PAGE SETTINGS
@@ -83,4 +83,61 @@ def genetic_algorithm(ratings, crossover_rate, mutation_rate, seed, generations=
 
     for _ in range(generations):
         fitnesses = [fitness(ind, ratings) for ind in population]
-        ne
+        new_population = []
+
+        for _ in range(pop_size):
+            parent1 = selection(population, fitnesses)
+            parent2 = selection(population, fitnesses)
+            if random.random() < crossover_rate:
+                child = crossover(parent1, parent2)
+            else:
+                child = parent1.copy()
+            child = mutate(child, mutation_rate)
+            new_population.append(child)
+
+        population = new_population
+        best_fitness_per_gen.append(max(fitnesses))
+
+    best_idx = np.argmax([fitness(ind, ratings) for ind in population])
+    best_solution = population[best_idx]
+    best_score = fitness(best_solution, ratings)
+    return best_solution, best_score, best_fitness_per_gen
+
+# ==========================================
+# RUN ALL TRIALS
+# ==========================================
+st.subheader("🚀 Running Genetic Algorithm Trials")
+
+hour_cols = [col for col in df.columns if col.lower().startswith("hour")]
+ratings_matrix = df[hour_cols].to_numpy()
+
+results = []
+fig, ax = plt.subplots()
+
+for t in trials:
+    solution, score, history = genetic_algorithm(
+        ratings_matrix,
+        crossover_rate=t["crossover"],
+        mutation_rate=t["mutation"],
+        seed=t["seed"]
+    )
+    results.append((t["trial"], score))
+    ax.plot(history, label=f'{t["trial"]} (C={t["crossover"]}, M={t["mutation"]})')
+
+ax.set_xlabel("Generation")
+ax.set_ylabel("Best Fitness")
+ax.set_title("Fitness Progress Across Generations")
+ax.legend()
+st.pyplot(fig)
+
+# ==========================================
+# DISPLAY FINAL RESULTS
+# ==========================================
+st.subheader("📊 Trial Results Summary")
+results_df = pd.DataFrame(results, columns=["Trial", "Best Fitness Score"])
+st.dataframe(results_df)
+
+best_trial = results_df.loc[results_df["Best Fitness Score"].idxmax()]
+st.success(f"🏆 Best Trial: **{best_trial['Trial']}** — Fitness Score: **{best_trial['Best Fitness Score']:.2f}**")
+
+st.caption("© 2025 Sharrmini Veeran | Streamlit-based GA Scheduler | All rights reserved")
