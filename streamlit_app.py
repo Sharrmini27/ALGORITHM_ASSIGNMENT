@@ -37,10 +37,50 @@ trials = [
 # GENETIC ALGORITHM FUNCTIONS
 # ==========================================
 def initialize_population(pop_size, num_programs):
+    """Generate initial random population"""
     return [random.sample(range(num_programs), num_programs) for _ in range(pop_size)]
 
 def fitness(individual, ratings):
+    """Calculate total fitness for an individual"""
     return sum(ratings[i][pos] for pos, i in enumerate(individual))
 
 def selection(population, fitnesses):
-    total_fitness = sum(fitnesses_
+    """Select one individual using roulette-wheel selection"""
+    total_fitness = sum(fitnesses)
+    probabilities = [f / total_fitness for f in fitnesses]
+    return population[np.random.choice(len(population), p=probabilities)]
+
+def crossover(parent1, parent2):
+    """Perform ordered crossover (OX)"""
+    size = len(parent1)
+    p1, p2 = random.sample(range(size), 2)
+    start, end = min(p1, p2), max(p1, p2)
+    child = [None] * size
+    child[start:end] = parent1[start:end]
+    pointer = 0
+    for gene in parent2:
+        if gene not in child:
+            while child[pointer] is not None:
+                pointer += 1
+            child[pointer] = gene
+    return child
+
+def mutate(individual, mutation_rate):
+    """Mutate an individual by swapping genes"""
+    for i in range(len(individual)):
+        if random.random() < mutation_rate:
+            j = random.randint(0, len(individual) - 1)
+            individual[i], individual[j] = individual[j], individual[i]
+    return individual
+
+def genetic_algorithm(ratings, crossover_rate, mutation_rate, seed, generations=100, pop_size=20):
+    """Main GA routine"""
+    random.seed(seed)
+    np.random.seed(seed)
+    num_programs = len(ratings)
+    population = initialize_population(pop_size, num_programs)
+    best_fitness_per_gen = []
+
+    for _ in range(generations):
+        fitnesses = [fitness(ind, ratings) for ind in population]
+        ne
